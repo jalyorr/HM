@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management</title>
+    <style>
+        /* Estilos básicos */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background-color: #f0f0f0;
+        }
+
+        .header-section {
+            flex: 1;
+            text-align: center;
+        }
+
+        .user-section {
+            text-align: left;
+        }
+
+        .auth-section {
+            text-align: right;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* Estilos para el switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Texto del switch */
+        .vacancy-status {
+            margin-left: 70px;
+        }
+
+        /* Estilos para el select de maintenance */
+        .maintenance-select {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background-color: white;
+        }
+
+        .maintenance-select option {
+            padding: 5px;
+        }
+
+        /* Color de fondo según el estado */
+        .status-ready {
+            background-color: #90EE90;
+        }
+        .status-working {
+            background-color: #FFD700;
+        }
+        .status-out {
+            background-color: #FFB6C1;
+        }
+
+        .maintenance-select:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Estilo para mostrar que se requiere inicio de sesión */
+        .maintenance-select:disabled:hover {
+            border-color: #ff0000;
+        }
+
+        #history-panel {
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        #room-select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            width: 200px;
+        }
+
+        #history-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        #history-table th, #history-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        #history-table th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-section user-section">
+            <p>Usuario actual: <span id="current-user">John Doe</span></p>
+        </div>
+        
+        <div class="header-section">
+            <nav>
+                <a href="#">Inicio</a> |
+                <a href="#">Reservaciones</a> |
+                <a href="#">Habitaciones</a> |
+                <a href="#">Reportes</a>
+            </nav>
+        </div>
+        
+        <div class="header-section auth-section">
+            <div id="login-form" style="display: none;">
+                <input type="email" id="email" placeholder="Email">
+                <input type="password" id="access-code" placeholder="Código de acceso">
+                <button onclick="login()">Entrar</button>
+            </div>
+            <button id="login-button" onclick="showLoginForm()">Iniciar Sesión</button>
+            <button id="logout-button" onclick="logout()" style="display: none;">Cerrar Sesión</button>
+        </div>
+    </header>
+
+    <div id="admin-panel" style="display: none; margin: 20px;">
+        <h2>Panel de Administración</h2>
+        <form id="employee-form">
+            <input type="text" id="firstName" placeholder="Nombre" required>
+            <input type="text" id="lastName" placeholder="Apellido" required>
+            <input type="email" id="employeeEmail" placeholder="Email" required>
+            <input type="text" id="employeeAccessCode" placeholder="Código de acceso" required>
+            <select id="employeeRole" required>
+                <option value="supervisor">Supervisor</option>
+                <option value="worker">Trabajador</option>
+            </select>
+            <div>
+                <label><input type="checkbox" name="permissions" value="housekeeping"> Housekeeping</label>
+                <label><input type="checkbox" name="permissions" value="maintenance"> Maintenance</label>
+                <label><input type="checkbox" name="permissions" value="vacancy"> Vacancy</label>
+            </div>
+            <button type="submit">Agregar Empleado</button>
+        </form>
+    </div>
+
+    <main>
+        <h1>Room Status</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Room</th>
+                    <th>Vacancy</th>
+                    <th>Maintenance</th>
+                    <th>Housekeeping</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Aquí puedes agregar filas de ejemplo -->
+                <tr>
+                    <td>101</td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" onchange="updateVacancy(this, '101')">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="vacancy-status">Occupied</span>
+                    </td>
+                    <td>
+                        <select class="maintenance-select" onchange="updateMaintenance(this)" data-original-value="ready" disabled>
+                            <option value="ready" class="status-ready">Ready</option>
+                            <option value="working" class="status-working">Working</option>
+                            <option value="out" class="status-out">Out of Service</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="maintenance-select" onchange="updateMaintenance(this)" data-original-value="ready" disabled>
+                            <option value="ready" class="status-ready">Ready</option>
+                            <option value="working" class="status-working">Working</option>
+                            <option value="out" class="status-out">Out of Service</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>102</td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" checked onchange="updateVacancy(this, '102')">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="vacancy-status">Vacant</span>
+                    </td>
+                    <td>
+                        <select class="maintenance-select" onchange="updateMaintenance(this)" data-original-value="working" disabled>
+                            <option value="ready" class="status-ready">Ready</option>
+                            <option value="working" class="status-working" selected>Working</option>
+                            <option value="out" class="status-out">Out of Service</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="maintenance-select" onchange="updateMaintenance(this)" data-original-value="ready" disabled>
+                            <option value="ready" class="status-ready">Ready</option>
+                            <option value="working" class="status-working">Working</option>
+                            <option value="out" class="status-out">Out of Service</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </main>
+
+    <div id="history-panel" style="margin-top: 30px; display: none;">
+        <h2>Historial de Cambios</h2>
+        <select id="room-select" onchange="loadRoomHistory()">
+            <option value="">Seleccione una habitación...</option>
+        </select>
+        <table id="history-table" style="margin-top: 15px;">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Habitación</th>
+                    <th>Empleado</th>
+                    <th>Tipo de Cambio</th>
+                    <th>Valor Anterior</th>
+                    <th>Valor Nuevo</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        function showLoginForm() {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('login-button').style.display = 'none';
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const accessCode = document.getElementById('access-code').value;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, accessCode })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Login failed');
+                }
+
+                currentUser = await response.json();
+                document.getElementById('current-user').textContent = 
+                    `${currentUser.first_name} ${currentUser.last_name}`;
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('logout-button').style.display = 'block';
+                
+                updateSelectorsAccess();
+                loadRooms();
+            } catch (error) {
+                alert('Error en el inicio de sesión');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('current-user').textContent = 'No user';
+            document.getElementById('login-button').style.display = 'block';
+            document.getElementById('logout-button').style.display = 'none';
+            updateSelectorsAccess();
+            document.getElementById('history-panel').style.display = 'none';
+        }
+
+        function updateSelectorsAccess() {
+            const maintenanceSelectors = document.querySelectorAll('.maintenance-select');
+            const housekeepingSelectors = document.querySelectorAll('.housekeeping-select');
+            const vacancyControls = document.querySelectorAll('.vacancy-control');
+
+            maintenanceSelectors.forEach(selector => {
+                selector.disabled = !currentUser?.permissions.includes('maintenance');
+                updateSelectOptions(selector, currentUser?.role === 'worker');
+            });
+
+            housekeepingSelectors.forEach(selector => {
+                selector.disabled = !currentUser?.permissions.includes('housekeeping');
+                updateSelectOptions(selector, currentUser?.role === 'worker');
+            });
+
+            vacancyControls.forEach(control => {
+                control.disabled = !currentUser?.permissions.includes('vacancy');
+            });
+        }
+
+        function updateSelectOptions(select, isWorker) {
+            const options = select.querySelectorAll('option');
+            options.forEach(option => {
+                if (option.value === 'ready') {
+                    option.disabled = isWorker;
+                }
+            });
+        }
+
+        // Modificar las funciones de actualización para incluir el ID del empleado
+        async function updateStatus(type, value, roomNumber) {
+            if (!currentUser) {
+                alert('Debe iniciar sesión para realizar cambios');
+                return false;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/rooms/${roomNumber}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        [type]: value,
+                        employeeId: currentUser.id
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Error al actualizar el estado');
+                }
+
+                // Recargar las habitaciones
+                await loadRooms();
+
+                // Actualizar historial si es necesario
+                const historyPanel = document.getElementById('history-panel');
+                const selectedRoom = document.getElementById('room-select').value;
+                if (historyPanel.style.display !== 'none' && selectedRoom === roomNumber) {
+                    await loadRoomHistory();
+                }
+
+                return true;
+            } catch (error) {
+                alert(error.message);
+                // Revertir el cambio en la UI
+                await loadRooms();
+                return false;
+            }
+        }
+
+        // Cargar habitaciones al iniciar
+        async function loadRooms() {
+            try {
+                const response = await fetch('http://localhost:3000/api/rooms');
+                const rooms = await response.json();
+                const tbody = document.querySelector('tbody');
+                tbody.innerHTML = '';
+                
+                rooms.forEach(room => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${room.room_number}</td>
+                        <td>
+                            <label class="switch">
+                                <input type="checkbox" class="vacancy-control"
+                                       ${room.is_vacant ? 'checked' : ''} 
+                                       onchange="updateStatus('isVacant', this.checked, '${room.room_number}')"
+                                       ${!currentUser?.permissions.includes('vacancy') ? 'disabled' : ''}>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="vacancy-status">${room.is_vacant ? 'Vacant' : 'Occupied'}</span>
+                        </td>
+                        <td>
+                            <select class="maintenance-select" 
+                                    onchange="updateStatus('maintenanceStatus', this.value, '${room.room_number}')"
+                                    ${!currentUser?.permissions.includes('maintenance') ? 'disabled' : ''}>
+                                <option value="ready" ${room.maintenance_status === 'ready' ? 'selected' : ''}>Ready</option>
+                                <option value="working" ${room.maintenance_status === 'working' ? 'selected' : ''}>Working</option>
+                                <option value="out" ${room.maintenance_status === 'out' ? 'selected' : ''}>Out of Service</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select class="housekeeping-select"
+                                    onchange="updateStatus('housekeepingStatus', this.value, '${room.room_number}')"
+                                    ${!currentUser?.permissions.includes('housekeeping') ? 'disabled' : ''}>
+                                <option value="ready" ${room.housekeeping_status === 'ready' ? 'selected' : ''}>Ready</option>
+                                <option value="working" ${room.housekeeping_status === 'working' ? 'selected' : ''}>Working</option>
+                                <option value="out" ${room.housekeeping_status === 'out' ? 'selected' : ''}>Out of Service</option>
+                            </select>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                // Actualizar acceso a los selectores
+                updateSelectorsAccess();
+
+                // Actualizar el selector de habitaciones para el historial
+                const roomSelect = document.getElementById('room-select');
+                roomSelect.innerHTML = '<option value="">Seleccione una habitación...</option>';
+                rooms.forEach(room => {
+                    roomSelect.innerHTML += `
+                        <option value="${room.room_number}">Habitación ${room.room_number}</option>
+                    `;
+                });
+
+                // Mostrar el panel de historial si el usuario es admin o supervisor
+                const historyPanel = document.getElementById('history-panel');
+                historyPanel.style.display = 
+                    currentUser?.role === 'admin' || currentUser?.role === 'supervisor' 
+                    ? 'block' 
+                    : 'none';
+
+            } catch (error) {
+                console.error('Error loading rooms:', error);
+            }
+        }
+
+        // Mostrar/ocultar panel de admin según el rol del usuario
+        function updateAdminPanel() {
+            const adminPanel = document.getElementById('admin-panel');
+            adminPanel.style.display = currentUser?.role === 'admin' ? 'block' : 'none';
+        }
+
+        // Modificar la función login para incluir el panel de admin
+        async function login() {
+            const email = document.getElementById('email').value;
+            const accessCode = document.getElementById('access-code').value;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, accessCode })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Login failed');
+                }
+
+                currentUser = await response.json();
+                document.getElementById('current-user').textContent = 
+                    `${currentUser.first_name} ${currentUser.last_name}`;
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('logout-button').style.display = 'block';
+                
+                updateSelectorsAccess();
+                loadRooms();
+            } catch (error) {
+                alert('Error en el inicio de sesión');
+            }
+            updateAdminPanel();
+        }
+
+        // Agregar manejador para el formulario de empleados
+        document.getElementById('employee-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const permissions = Array.from(document.querySelectorAll('input[name="permissions"]:checked'))
+                .map(checkbox => checkbox.value);
+
+            const newEmployee = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('employeeEmail').value,
+                accessCode: document.getElementById('employeeAccessCode').value,
+                role: document.getElementById('employeeRole').value,
+                permissions: permissions
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/employees', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(newEmployee)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add employee');
+                }
+
+                alert('Empleado agregado exitosamente');
+                e.target.reset();
+            } catch (error) {
+                alert('Error al agregar empleado');
+                console.error('Error:', error);
+            }
+        });
+
+        // Cargar habitaciones al iniciar la página
+        document.addEventListener('DOMContentLoaded', loadRooms);
+
+        // Función para cargar el historial de una habitación
+        async function loadRoomHistory() {
+            const roomNumber = document.getElementById('room-select').value;
+            if (!roomNumber) return;
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/rooms/${roomNumber}/history`);
+                const history = await response.json();
+                
+                const tbody = document.querySelector('#history-table tbody');
+                tbody.innerHTML = '';
+
+                history.forEach(record => {
+                    const tr = document.createElement('tr');
+                    const date = new Date(record.changed_at).toLocaleString();
+                    tr.innerHTML = `
+                        <td>${date}</td>
+                        <td>${record.room_number}</td>
+                        <td>${record.first_name} ${record.last_name} (${record.role})</td>
+                        <td>${translateChangeType(record.change_type)}</td>
+                        <td>${translateValue(record.old_value)}</td>
+                        <td>${translateValue(record.new_value)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        // Función para traducir los tipos de cambio
+        function translateChangeType(type) {
+            const translations = {
+                'vacancy': 'Ocupación',
+                'maintenance': 'Mantenimiento',
+                'housekeeping': 'Limpieza'
+            };
+            return translations[type] || type;
+        }
+
+        // Función para traducir valores
+        function translateValue(value) {
+            const translations = {
+                'true': 'Vacante',
+                'false': 'Ocupado',
+                'ready': 'Listo',
+                'working': 'En Proceso',
+                'out': 'Fuera de Servicio'
+            };
+            return translations[value] || value;
+        }
+    </script>
+</body>
+</html>
