@@ -7,11 +7,11 @@ const port = 3000;
 
 // Configuración de la conexión a PostgreSQL
 const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'hotel_db',
-    password: 'master96',
-    port: 5432,
+    user: 'test_db_ocp8_user',      // Reemplaza con tu usuario de PostgreSQL
+    host: 'dpg-ct4i993qf0us7381qa80-a',
+    database: 'test_db_ocp8', // Nombre de tu base de datos
+    password: 'pv1DK352ggg6V8GOTMz4c0aUFhqJPWc4', // Reemplaza con tu contraseña de PostgreSQL
+    port: 5432
 });
 
 // Middleware
