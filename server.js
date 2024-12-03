@@ -1,12 +1,9 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 const { Pool } = require('pg');
-const path = require('path');
 
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+const port = process.env.port || 3000;
 
 // Configuración de la conexión a PostgreSQL
 const pool = new Pool({
@@ -429,5 +426,7 @@ app.get('/api/rooms/:roomNumber/history', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor ejecutándose en http://localhost:${PORT}`));
+// Inicializar la base de datos y arrancar el servidor
+initializeDatabase().then(() => {
+    app.listen(port, () => {console.log(`Server running at http://localhost:${port}`);});
+}); 
